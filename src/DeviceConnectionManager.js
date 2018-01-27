@@ -1,8 +1,10 @@
 const process = require('process');
 const miio = require('miio');
 
+const DEFAULT_CACHE_TIME_IN_SECONDS = 300;
+
 class DeviceConnectionManager {
-  constructor({ cacheTime = 300 } = {}, logger = console) {
+  constructor({ cacheTime = DEFAULT_CACHE_TIME_IN_SECONDS } = {}, logger = console) {
     this._connections = {};
     this._cacheTime = cacheTime;
     this._logger = logger;
@@ -12,14 +14,14 @@ class DeviceConnectionManager {
     return this._connections;
   }
 
+  getConnectedAirPurifiers() {
+    return this.filterConnectedDevices('type:air-purifier');
+  }
+
   filterConnectedDevices(filter) {
     return Object.values(this._connections)
       .filter(connection => connection.device.matches(filter))
       .map(connection => connection.device);
-  }
-
-  getConnectedAirPurifiers() {
-    return this.filterConnectedDevices('type:air-purifier');
   }
 
   discoverDevices() {
@@ -31,7 +33,7 @@ class DeviceConnectionManager {
     process.on('SIGINT', () => this._tearDown());
   }
 
-  async _handleDeviceAvailable(connection) {
+  _handleDeviceAvailable(connection) {
     this._logger.log(`New device ${connection.device.miioModel} (${connection.id}) found`);
     this._connections[connection.id] = connection;
   }
