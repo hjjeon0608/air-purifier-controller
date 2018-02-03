@@ -10,35 +10,29 @@ class DeviceConnectionManager {
     this._logger = logger;
   }
 
-  getConnectedDevices() {
-    return this._connections;
-  }
-
-  getConnectedAirPurifiers() {
-    return this.filterConnectedDevices('type:air-purifier');
-  }
-
-  filterConnectedDevices(filter) {
-    return Object.values(this._connections)
-      .filter(connection => connection.device.matches(filter))
-      .map(connection => connection.device);
-  }
-
   discoverDevices() {
-    const devices = miio.devices({ cacheTime: this._cacheTime });
+    this._logger.log('Discovering Xiaomi devices connected to the local network...');
 
-    devices.on('available', device => this._handleDeviceAvailable(device));
-    devices.on('unavailable', device => this._handleDeviceUnavailable(device));
-    devices.on('error', console.error);
+    const connections = miio.devices({ cacheTime: this._cacheTime });
+
+    connections.on('available', connection => this._handleDeviceConnected(connection));
+    connections.on('unavailable', connection => this._handleDeviceDisconnected(connection));
+    connections.on('error', console.error);
     process.on('SIGINT', () => this._tearDown());
   }
 
-  _handleDeviceAvailable(connection) {
-    this._logger.log(`New device ${connection.device.miioModel} (${connection.id}) found`);
+  getConnectedAirPurifiers() {
+    return Object.values(this._connections)
+      .filter(connection => connection.device.matches('type:air-purifier'))
+      .map(connection => connection.device);
+  }
+
+  _handleDeviceConnected(connection) {
+    this._logger.log(`New device ${connection.device.miioModel} (${connection.id}) connected`);
     this._connections[connection.id] = connection;
   }
 
-  async _handleDeviceUnavailable(connection) {
+  async _handleDeviceDisconnected(connection) {
     this._logger.log(`Device ${connection.id} has disconnected`);
 
     const connection = this._connections[id];
@@ -49,9 +43,11 @@ class DeviceConnectionManager {
   }
 
   async _tearDown() {
-    this._logger.log('\nClosing device connections');
-    Object.entries(this._connections)
-      .forEach(async connection => await connection.destroy());
+    const activeConnections = Object.entries(this._connections);
+    if (activeConnections.length) {
+      this._logger.log('\nClosing device connections');
+      activeConnections.forEach(async connection => await connection.destroy());
+    }
     this._logger.log('Qutting');
     process.exit(0);
   }
