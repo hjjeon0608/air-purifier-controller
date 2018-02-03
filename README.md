@@ -1,6 +1,6 @@
 ## air-purifier-controller
 
-An IoT dameon to control Xiaomi air purifiers at my home.
+A Node.js dameon to control Xiaomi air purifiers at my home.
 
 ### To do
 
