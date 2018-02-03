@@ -1,48 +1,32 @@
-const DEFAULT_GOOD_AIR_QUALITY = 20;
-const DEFAULT_TERRIBLE_AIR_QUALITY = 50;
+const adjustDevice = require('./adjustDevice');
+const logger = require('./logger');
 
-module.exports = function createAdjustModeToAirQuality(logger = console, config = {}) {
-  const goodAirQuality = config.goodAirQuality || DEFAULT_GOOD_AIR_QUALITY;
-  const terribleAirQuality = config.terribleAirQuality || DEFAULT_TERRIBLE_AIR_QUALITY;
-
-  return function adjustModeToAirQuality(devices) {
-    devices.forEach(async device => {
-      logger.log(`${device.miioModel}: checking current air quality`);
-
+function createAdjustModeToAirQuality({ settingsPerPollutionLevel, deviceNames }) {
+  return function adjustModeToAirQuality(connections) {
+    connections.forEach(async connection => {
+      const device = connection.device;
       const pm2_5 = await device.pm2_5();
-      const currentMode = await device.mode();
+      const deviceName = deviceNames[connection.id] || connection.id;
 
-      logger.log(`${device.miioModel}: PM2,5 is ${pm2_5}µg/m3`);
-
-      if (pm2_5 <= goodAirQuality) {
-        if (currentMode !== 'auto') {
-          device.setMode('auto');
-          logger.log(`${device.miioModel}: good air quality, changing mode to slow`);
-        } else {
-          logger.log(`${device.miioModel}: good air quality`);
-        }
-        return;
-      }
-
-      const currentFavoriteLevel = await device.favoriteLevel();
+      logger.log(`${deviceName}: current PM2,5 level is ${pm2_5}µg/m3`);
       
-      if (pm2_5 > goodAirQuality && pm2_5 <= terribleAirQuality) {
-        if (currentMode !== 'favorite' || currentFavoriteLevel != 6) {
-          device.setMode('favorite');
-          device.setFavoriteLevel(6);
-          logger.log(`${device.miioModel}: poor air quality, changing mode to half-speed`);
-        } else {
-          logger.log(`${device.miioModel}: poor air quality`);
-        }
-      } else {
-        if (currentMode !== 'favorite' || currentFavoriteLevel != 16) {
-          device.setMode('favorite');
-          device.setFavoriteLevel(16);
-          logger.log(`${device.miioModel}: terrible air quality, changing mode to turbo`);
-        } else {
-          logger.log(`${device.miioModel}: terrible air quality`);
+      const tresholds = Object.keys(settingsPerPollutionLevel).reverse();
+      let settings;
+
+      for (const treshold of tresholds) {
+        if (pm2_5 > treshold) {
+          settings = settingsPerPollutionLevel[treshold];
+          break;
         }
       }
+
+      if (!settings) {
+        throw new Error('Settings per pollution level are invalid');
+      }
+
+      adjustDevice({ settings, device, deviceName });
     });
   }
 }
+
+module.exports = createAdjustModeToAirQuality;
