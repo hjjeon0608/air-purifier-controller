@@ -45,6 +45,6 @@ module.exports = {
     54379102: 'Bedroom'
   },
   connectionCacheTime: 300,
-  pollutionCheckFrequency: 30,
+  pollutionCheckFrequency: 20,
   initialCheckDelay: 3,
 };
