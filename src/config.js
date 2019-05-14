@@ -8,33 +8,30 @@ module.exports = {
   // favoriteLevel - what is the level for favorite (user controlled) mode - between 1 and 16
   settingsPerPollutionLevel: {
     0: { // below 8
-      on: false
-    },
-    8: { // below 20
       on: true,
-      mode: 'auto',
+      mode: 'auto'
     },
-    20: { // below 30
+    4: { // below 20
       on: true,
       mode: 'favorite',
-      favoriteLevel: 6,
+      favoriteLevel: 3
     },
-    25: { // below 50
+    8: { // below 30
       on: true,
       mode: 'favorite',
-      favoriteLevel: 8
+      favoriteLevel: 6
     },
-    30: { // below 50
+    12: { // below 50
       on: true,
       mode: 'favorite',
-      favoriteLevel: 10
+      favoriteLevel: 9
     },
-    40: { // below 50
+    16: { // below 50
       on: true,
       mode: 'favorite',
-      favoriteLevel: 13
+      favoriteLevel: 12
     },
-    50: { // equal or above 50
+    20: { // below 50
       on: true,
       mode: 'favorite',
       favoriteLevel: 16
